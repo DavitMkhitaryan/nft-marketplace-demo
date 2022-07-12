@@ -36,6 +36,17 @@ contract ERC721 {
         emit Transfer(address(0), to, tokenId);
     }
 
+    function balanceOf(address _owner) public view returns(uint256) {
+        require(_owner != address(0), 'ERC721: Owner input address is zero address');
+        return _ownedTokensCount[_owner];
+    }
+
+    function ownerOf(uint256 _tokenId) public view returns(address) {
+        address owner = _tokenOwner[_tokenId];
+        require(owner != address(0), 'ERC721: Owner input address is zero address');
+        return owner;
+    }
+
 
 
 }
