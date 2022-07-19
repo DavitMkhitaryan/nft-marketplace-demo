@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "./ERC165.sol";
+import "./interfaces/IERC721.sol";
+
 /*
     Buliding out the minting functionality:
         a. nft to point to an address
@@ -10,11 +13,7 @@ pragma solidity ^0.8.0;
         e. create an event that emits a transfer log - contract address where it is being minted to, the id
 */
 
-contract ERC721 {
-
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-
-
+contract ERC721 is ERC165, IERC721 {
     // Mapping from token id to owner
     mapping(uint256 => address) private _tokenOwner;
 
@@ -24,14 +23,24 @@ contract ERC721 {
     // Mapping from token id to approved addresses
     mapping(uint256 => address) private _tokenApprovals;
 
-    function _exists(uint256 tokenId) internal view returns(bool) {
+    constructor() {
+        _registerInterface(
+            bytes4(
+                keccak256("balanceOf(bytes4)") ^
+                    keccak256("ownerOf(bytes4)") ^
+                    keccak256("transferFrom(bytes4)")
+            )
+        );
+    }
+
+    function _exists(uint256 tokenId) internal view returns (bool) {
         address owner = _tokenOwner[tokenId];
         return owner != address(0);
     }
 
     function _mint(address to, uint256 tokenId) internal virtual {
-        require(to != address(0), 'ERC721: Minting to the zero address');
-        require(!_exists(tokenId), 'ERC721: Token already minted');
+        require(to != address(0), "ERC721: Minting to the zero address");
+        require(!_exists(tokenId), "ERC721: Token already minted");
         _tokenOwner[tokenId] = to;
         _ownedTokensCount[to] += 1;
 
@@ -39,21 +48,34 @@ contract ERC721 {
         emit Transfer(address(0), to, tokenId);
     }
 
-    function balanceOf(address _owner) public view returns(uint256) {
-        require(_owner != address(0), 'ERC721: Owner input address is zero address');
+    function balanceOf(address _owner) public view override returns (uint256) {
+        require(
+            _owner != address(0),
+            "ERC721: Owner input address is zero address"
+        );
         return _ownedTokensCount[_owner];
     }
 
-    function ownerOf(uint256 _tokenId) public view returns(address) {
+    function ownerOf(uint256 _tokenId) public view override returns (address) {
         address owner = _tokenOwner[_tokenId];
-        require(owner != address(0), 'ERC721: Owner input address is zero address');
+        require(
+            owner != address(0),
+            "ERC721: Owner input address is zero address"
+        );
         return owner;
     }
 
-    function _transferFrom(address _from, address _to, uint256 _tokenId) internal {
-        require(_to != address(0), 'Transferring to zero address');
-        require(ownerOf(_tokenId) == _from, 'Trasnferring from not the owner of the token');
-        
+    function _transferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) internal {
+        require(_to != address(0), "Transferring to zero address");
+        require(
+            ownerOf(_tokenId) == _from,
+            "Trasnferring from not the owner of the token"
+        );
+
         _ownedTokensCount[_from] -= 1;
         _ownedTokensCount[_to] += 1;
 
@@ -62,8 +84,11 @@ contract ERC721 {
         emit Transfer(_from, _to, _tokenId);
     }
 
-    function transferFrom(address _from, address _to, uint256 _tokenId) public {
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) public override {
         _transferFrom(_from, _to, _tokenId);
     }
-
 }
