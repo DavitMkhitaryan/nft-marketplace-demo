@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./ERC165.sol";
 import "./interfaces/IERC721.sol";
+import "./libraries/Counters.sol";
 
 /*
     Buliding out the minting functionality:
@@ -14,11 +15,15 @@ import "./interfaces/IERC721.sol";
 */
 
 contract ERC721 is ERC165, IERC721 {
+    using SafeMath for uint256;
+    using Counters for Counters.Counter;
+
     // Mapping from token id to owner
     mapping(uint256 => address) private _tokenOwner;
 
     // Mapping from owner to number of owned tokens
-    mapping(address => uint256) private _ownedTokensCount;
+    // mapping(address => uint256) private _ownedTokensCount;
+    mapping(address => Counters.Counter) private _ownedTokensCount;
 
     // Mapping from token id to approved addresses
     mapping(uint256 => address) private _tokenApprovals;
@@ -42,7 +47,7 @@ contract ERC721 is ERC165, IERC721 {
         require(to != address(0), "ERC721: Minting to the zero address");
         require(!_exists(tokenId), "ERC721: Token already minted");
         _tokenOwner[tokenId] = to;
-        _ownedTokensCount[to] += 1;
+        _ownedTokensCount[to].increment();
 
         // address(0) is default value for now, but it should be the contract address
         emit Transfer(address(0), to, tokenId);
@@ -53,7 +58,7 @@ contract ERC721 is ERC165, IERC721 {
             _owner != address(0),
             "ERC721: Owner input address is zero address"
         );
-        return _ownedTokensCount[_owner];
+        return _ownedTokensCount[_owner].current();
     }
 
     function ownerOf(uint256 _tokenId) public view override returns (address) {
@@ -76,8 +81,8 @@ contract ERC721 is ERC165, IERC721 {
             "Trasnferring from not the owner of the token"
         );
 
-        _ownedTokensCount[_from] -= 1;
-        _ownedTokensCount[_to] += 1;
+        _ownedTokensCount[_from].decrement();
+        _ownedTokensCount[_to].increment();
 
         _tokenOwner[_tokenId] = _to;
 
